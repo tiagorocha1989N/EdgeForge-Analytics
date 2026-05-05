@@ -352,7 +352,7 @@ def page_all_combinations(df):
                     'sortino','omega','profit_factor','profitable','half_kelly',
                     'trades','net_profit','calmar','slap_score','label']
 
-    st.dataframe(df_f[display_cols], use_container_width=True, height=500)
+    st.dataframe(df_top[display_cols], use_container_width=True, height=500)
 
     # Stats
     st.subheader("📊 Statistical Summary")
@@ -595,7 +595,7 @@ def page_top_results(df):
                     'sortino','omega','profit_factor','profitable','half_kelly',
                     'trades','net_profit','calmar','slap_score','label']
 
-    st.dataframe(df_f[display_cols], use_container_width=True, height=500)
+    st.dataframe(df_top[display_cols], use_container_width=True, height=500)
 
     # Download
     csv = df_top[display_cols].to_csv(index=False)
@@ -631,4 +631,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
