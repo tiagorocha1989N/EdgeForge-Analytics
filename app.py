@@ -357,7 +357,7 @@ def page_all_combinations(df):
         if val == 'Mid':       return 'background-color: #FF8C00; color: black'
         return 'background-color: #AA0000; color: white'
 
-    styled = df_f[display_cols].style.applymap(color_label, subset=['label'])
+    styled = df_f[display_cols].style.map(color_label, subset=['label'])
     st.dataframe(styled, use_container_width=True, height=500)
 
     # Stats
@@ -606,7 +606,7 @@ def page_top_results(df):
         if val == 'Mid':       return 'background-color: #FF8C00; color: black'
         return 'background-color: #AA0000; color: white'
 
-    styled = df_top[display_cols].style.applymap(color_label, subset=['label'])
+    styled = df_top[display_cols].style.map(color_label, subset=['label'])
     st.dataframe(styled, use_container_width=True, height=500)
 
     # Download
