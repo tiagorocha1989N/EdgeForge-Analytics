@@ -352,7 +352,13 @@ def page_all_combinations(df):
                     'sortino','omega','profit_factor','profitable','half_kelly',
                     'trades','net_profit','calmar','slap_score','label']
 
-    st.dataframe(df_top[display_cols], use_container_width=True, height=500)
+    def color_label(val):
+        if val == 'SSSlapper': return 'background-color: #007700; color: white'
+        if val == 'Mid':       return 'background-color: #FF8C00; color: black'
+        return 'background-color: #AA0000; color: white'
+
+    styled = df_f[display_cols].style.applymap(color_label, subset=['label'])
+    st.dataframe(styled, use_container_width=True, height=500)
 
     # Stats
     st.subheader("📊 Statistical Summary")
@@ -595,7 +601,13 @@ def page_top_results(df):
                     'sortino','omega','profit_factor','profitable','half_kelly',
                     'trades','net_profit','calmar','slap_score','label']
 
-    st.dataframe(df_top[display_cols], use_container_width=True, height=500)
+    def color_label(val):
+        if val == 'SSSlapper': return 'background-color: #007700; color: white'
+        if val == 'Mid':       return 'background-color: #FF8C00; color: black'
+        return 'background-color: #AA0000; color: white'
+
+    styled = df_top[display_cols].style.applymap(color_label, subset=['label'])
+    st.dataframe(styled, use_container_width=True, height=500)
 
     # Download
     csv = df_top[display_cols].to_csv(index=False)
@@ -631,5 +643,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
