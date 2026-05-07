@@ -225,6 +225,22 @@ def sidebar():
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGES
 # ══════════════════════════════════════════════════════════════════════════════
+def overview_comparison_table(df, rows_config, title, col_label='Type'):
+    METRICS = ['equity_max_dd','sharpe','sortino','omega',
+               'profit_factor','profitable','half_kelly','trades','net_profit']
+    METRIC_COLS = ['Equity Max DD','Sharpe','Sortino','Omega',
+                   'Profit Factor','Profitable','Half Kelly','Trades','Net Profit']
+    rows = []
+    for lbl, subset in rows_config:
+        row = {col_label: lbl}
+        for m, col in zip(METRICS, METRIC_COLS):
+            row[col] = round(subset[m].mean(), 3) if m in subset.columns and len(subset) > 0 else None
+        rows.append(row)
+    table_df = pd.DataFrame(rows).set_index(col_label)
+    st.subheader(title)
+    st.dataframe(table_df, use_container_width=True)
+
+
 def page_overview(df):
     st.markdown("""
     <div class="header-box">
@@ -248,37 +264,24 @@ def page_overview(df):
 
     st.divider()
 
-    # Label distribution
     col1, col2 = st.columns(2)
-
     with col1:
         fig = go.Figure(go.Pie(
             labels=['SSSlapper', 'Mid', 'Shit'],
             values=[n_slap, n_mid, n_shit],
-            marker_colors=['#00ff88', '#ff8c00', '#ff4444'],
-            hole=0.4,
+            marker_colors=['#00ff88', '#ff8c00', '#ff4444'], hole=0.4,
         ))
-        fig.update_layout(
-            title="Performance Distribution",
-            paper_bgcolor='#0a0a1a',
-            font=dict(color='#cccccc'),
-            height=350,
-        )
+        fig.update_layout(title="Performance Distribution",
+                          paper_bgcolor='#0a0a1a', font=dict(color='#cccccc'), height=350)
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        # Combinations by N indicators
         n_counts = df.groupby('n_indicators').size().reset_index(name='count')
         fig2 = px.bar(n_counts, x='n_indicators', y='count',
                       title="Combinations by Number of Active Indicators",
-                      color='count',
-                      color_continuous_scale='Blues')
-        fig2.update_layout(
-            paper_bgcolor='#0a0a1a',
-            plot_bgcolor='#0f1923',
-            font=dict(color='#cccccc'),
-            height=350,
-        )
+                      color='count', color_continuous_scale='Blues')
+        fig2.update_layout(paper_bgcolor='#0a0a1a', plot_bgcolor='#0f1923',
+                           font=dict(color='#cccccc'), height=350)
         st.plotly_chart(fig2, use_container_width=True)
 
     st.divider()
@@ -291,7 +294,78 @@ def page_overview(df):
 
     st.divider()
 
-    # Methodology
+    # ── Bell Curve All Combinations ──────────────────────────────────
+    st.subheader("🔔 Bell Curve — All Combinations")
+    bell_all = st.selectbox("Select Metric", metrics,
+        format_func=lambda x: x.replace('_',' ').title(), key="bell_all")
+    st.plotly_chart(bell_curve_plot(df, bell_all,
+        f"Distribution — {bell_all.replace('_',' ').title()} (All Combinations)"),
+        use_container_width=True)
+
+    st.divider()
+
+    # ── Table 1: By N Combinations ───────────────────────────────────
+    rows_n = [("All Combinations", df)] + \
+             [(f"Combination {n}", df[df['n_indicators'] == n]) for n in range(1, 17)]
+    overview_comparison_table(df, rows_n,
+        "📊 Performance by N Active Indicators (Mean Values)", "Type Combination")
+
+    st.subheader("🔔 Bell Curve — By N Active Indicators")
+    col1, col2 = st.columns(2)
+    with col1:
+        bell_n_m = st.selectbox("Select Metric", metrics,
+            format_func=lambda x: x.replace('_',' ').title(), key="bell_n_m")
+    with col2:
+        bell_n_n = st.selectbox("N Indicators", list(range(1, 17)), key="bell_n_n")
+    st.plotly_chart(bell_curve_plot(df[df['n_indicators'] == bell_n_n], bell_n_m,
+        f"Distribution — {bell_n_m.replace('_',' ').title()} | N={bell_n_n}"),
+        use_container_width=True)
+
+    st.divider()
+
+    # ── Table 2: Inclusion Analysis ──────────────────────────────────
+    rows_inc = [("All Combinations", df)] + \
+               [(f"Indicator {i}", df[df['active_inds'].apply(lambda x: i in x)])
+                for i in range(1, 17)]
+    overview_comparison_table(df, rows_inc,
+        "📊 Inclusion Analysis — Mean Performance per Indicator", "Indicator")
+
+    st.subheader("🔔 Bell Curve — Inclusion Analysis")
+    col1, col2 = st.columns(2)
+    with col1:
+        bell_inc_m = st.selectbox("Select Metric", metrics,
+            format_func=lambda x: x.replace('_',' ').title(), key="bell_inc_m")
+    with col2:
+        bell_inc_i = st.selectbox("Indicator", list(range(1, 17)), key="bell_inc_i")
+    df_inc = df[df['active_inds'].apply(lambda x: bell_inc_i in x)]
+    st.plotly_chart(bell_curve_plot(df_inc, bell_inc_m,
+        f"Distribution — {bell_inc_m.replace('_',' ').title()} | Indicator {bell_inc_i} Included"),
+        use_container_width=True)
+
+    st.divider()
+
+    # ── Table 3: Exclusion Analysis ──────────────────────────────────
+    rows_exc = [("All Combinations", df)] + \
+               [(f"Exclusion Analysis Indicator {i}",
+                 df[df['active_inds'].apply(lambda x: i not in x)])
+                for i in range(1, 17)]
+    overview_comparison_table(df, rows_exc,
+        "📊 Exclusion Analysis — Mean Performance per Indicator", "Indicator")
+
+    st.subheader("🔔 Bell Curve — Exclusion Analysis")
+    col1, col2 = st.columns(2)
+    with col1:
+        bell_exc_m = st.selectbox("Select Metric", metrics,
+            format_func=lambda x: x.replace('_',' ').title(), key="bell_exc_m")
+    with col2:
+        bell_exc_i = st.selectbox("Indicator", list(range(1, 17)), key="bell_exc_i")
+    df_exc = df[df['active_inds'].apply(lambda x: bell_exc_i not in x)]
+    st.plotly_chart(bell_curve_plot(df_exc, bell_exc_m,
+        f"Distribution — {bell_exc_m.replace('_',' ').title()} | Indicator {bell_exc_i} Excluded"),
+        use_container_width=True)
+
+    st.divider()
+
     with st.expander("📖 Study Methodology"):
         st.markdown("""
         ### EdgeForge Analytics — Methodology
@@ -352,13 +426,7 @@ def page_all_combinations(df):
                     'sortino','omega','profit_factor','profitable','half_kelly',
                     'trades','net_profit','calmar','slap_score','label']
 
-    def color_label(val):
-        if val == 'SSSlapper': return 'background-color: #007700; color: white'
-        if val == 'Mid':       return 'background-color: #FF8C00; color: black'
-        return 'background-color: #AA0000; color: white'
-
-    styled = df_f[display_cols].style.applymap(color_label, subset=['label'])
-    st.dataframe(styled, use_container_width=True, height=500)
+    st.dataframe(df_f[display_cols], use_container_width=True, height=500)
 
     # Stats
     st.subheader("📊 Statistical Summary")
@@ -601,13 +669,7 @@ def page_top_results(df):
                     'sortino','omega','profit_factor','profitable','half_kelly',
                     'trades','net_profit','calmar','slap_score','label']
 
-    def color_label(val):
-        if val == 'SSSlapper': return 'background-color: #007700; color: white'
-        if val == 'Mid':       return 'background-color: #FF8C00; color: black'
-        return 'background-color: #AA0000; color: white'
-
-    styled = df_top[display_cols].style.applymap(color_label, subset=['label'])
-    st.dataframe(styled, use_container_width=True, height=500)
+    st.dataframe(df_top[display_cols], use_container_width=True, height=500)
 
     # Download
     csv = df_top[display_cols].to_csv(index=False)
